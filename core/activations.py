@@ -4,52 +4,73 @@
 # @Author  : pcw
 # @File    : activations.py
 # @Description: <>
-from abc import ABCMeta, abstractmethod
 import numpy as np
-
-class ActivationFunction(metaclass=ABCMeta):
-    name = "activation"
-    @abstractmethod
-    @classmethod
-    def active_func(self, x):
-        """激活函数
-        """
-        pass
-
-    @abstractmethod
-    @classmethod
-    def grad_func(self, g):
-        """激活函数的导数
-        """
-        pass
+from typing import NamedTuple,Callable,Union
 
 
-class Sigmoid(ActivationFunction):
-    name = "sigmoid"
-    def active_func(self, x):
-        return 1.0 / (1.0 + np.exp(-x))
+# ------激活函数枚举--------
+active_param_types = Union[float,int]
 
-    def grad_func(self, g):
-        ag = self.active_func(g)
-        return ag*(1-ag)
-
-
-class Tanh(ActivationFunction):
-    name = "tanh"
-    def active_func(self, x):
-        return np.tanh(x)
-
-    def grad_func(self, g):
-        return 1.0 - np.power(np.tanh(g),2)
+class ActivationFunc(NamedTuple):
+    name: str
+    active_func: Callable[..., np.ndarray]
+    grad_func: Callable[..., np.ndarray]
 
 
-class ReLU(ActivationFunction):
-    name = "relu"
-    def active_func(self, x):
-        return np.where(x<0, 0, x)
+def sigmoid() -> ActivationFunc:
+    return ActivationFunc("sigmoid", sigmoid_func, sigmoid_deriv)
 
-    def grad_func(self, g):
-        return np.where(g<0, 0, 1)
+
+def tanh() -> ActivationFunc:
+    return ActivationFunc("tanh", tanh_func, tanh_deriv)
+
+
+def relu() -> ActivationFunc:
+    return ActivationFunc("relu", relu_func, relu_deriv)
+
+
+def lrelu(alpha = .1) -> ActivationFunc:
+    return ActivationFunc("leaky relu", lrelu_func(alpha), lrelu_deriv(alpha))
+
+
+# ------激活函数--------
+def sigmoid_func(x: np.ndarray) -> np.ndarray:
+    return 1.0 / (1.0 + np.exp(-x))
+
+
+def sigmoid_deriv(g: np.ndarray) -> np.ndarray:
+    act = sigmoid_func(g)
+    return act * (1. - act)
+
+
+def tanh_func(x: np.ndarray) -> np.ndarray:
+    return np.tanh(x)
+
+
+def tanh_deriv(g: np.ndarray) -> np.ndarray:
+    return 1.0 - np.power(np.tanh(g), 2)
+
+
+def relu_func(x: np.ndarray) -> np.ndarray:
+    return np.where(x > 0, x, 0)
+
+
+def relu_deriv(g: np.ndarray) -> np.ndarray:
+    return np.where(g > 0, 1, 0)
+
+
+def lrelu_func(alpha):
+    def inner_func(x: np.ndarray) -> np.ndarray:
+        return np.where(x > 0, x, alpha*x)
+    return inner_func
+
+def lrelu_deriv(alpha):
+    def inner_func(g: np.ndarray) -> np.ndarray:
+        return np.where(g > 0, 1, alpha)
+    return inner_func
+
 
 if __name__ == '__main__':
-    pass
+    lr = lrelu(0.5)
+    a = np.array([1, 0, -1, 2, -2])
+    print("{}: {} -> {}".format(lr.name, a, lr.active_func(a)))

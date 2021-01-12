@@ -7,16 +7,8 @@
 from typing import NoReturn, NamedTuple, Callable, List
 import numpy as np
 from core.utils import ArrayLike, array_like_format
-from absl import logging
 
 _epsilon_ = 5e-5
-
-class Dependency(NamedTuple):
-    """tensor依赖关系
-    """
-    grad_func: Callable[[np.ndarray], np.ndarray]  # a function of ([np.ndarray]) -> np.ndarray
-    link_to: 'Tensor'
-
 
 def _auto_diff(func, x):
     """有限差分近似
@@ -36,11 +28,5 @@ class Tensor:
         return "{} ({}): {}".format(self.name,
                                     "constant" if self.is_constant else "variable",
                                     self.data.shape)
-
-
-if __name__ == '__main__':
-    data = [1,2,3]
-    ts = Tensor(data)
-    print(ts)
 
 
