@@ -43,6 +43,14 @@ def sigmoid_deriv(g: np.ndarray) -> np.ndarray:
     return act * (1. - act)
 
 
+def softmax_func(x: np.ndarray) -> np.ndarray:
+    return np.exp(x) / np.sum(np.exp(x), axis=1)
+
+
+def softmax_deriv(g: np.ndarray) -> np.ndarray:
+    pass
+
+
 def tanh_func(x: np.ndarray) -> np.ndarray:
     return np.tanh(x)
 

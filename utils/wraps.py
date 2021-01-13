@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # @Time    : 1/11/21 3:06 下午
 # @Author  : pcw
-# @File    : utils.py
+# @File    : wraps.py
 # @Description: <>
 import numpy as np
 from functools import  wraps

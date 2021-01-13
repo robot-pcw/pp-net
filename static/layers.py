@@ -5,9 +5,9 @@
 # @File    : layers.py
 # @Description: <>
 import numpy as np
-from core.tensor import Tensor
-from typing import NoReturn
-from core.activations import ActivationFunc
+from typing import NoReturn, Tuple, List, NamedTuple
+from static.activations import ActivationFunc
+
 
 class Layer:
     """神经网络层
@@ -15,11 +15,19 @@ class Layer:
     def __init__(self, name: str="layer"):
         self.layer_name = name
 
-    def forward(self, inputs: Tensor) -> np.ndarray:
+    def __repr__(self):
+        return "--- {} ".format(self.layer_name)
+
+    def forward(self, inputs: np.ndarray) -> np.ndarray:
         raise NotImplementedError
 
-    def backward(self, grad: Tensor) -> np.ndarray:
+    def backward(self, grad: np.ndarray) -> np.ndarray:
         raise NotImplementedError
+
+
+class StaticTensor(NamedTuple):
+    data: np.ndarray
+    grad: np.ndarray
 
 
 class ParamLayer(Layer):
@@ -27,19 +35,18 @@ class ParamLayer(Layer):
     """
     def __init__(self, layer_name: str="param_layer") -> NoReturn:
         super().__init__(layer_name)
-        self.weights: np.ndarray = None
-        self.bias: np.ndarray = None
+        self.params_to_update: List[StaticTensor] = []
 
     def weights_init(self, dim_tuple: tuple) -> np.ndarray:
-        return np.random.rand(dim_tuple)
+        return np.random.rand(*dim_tuple)
 
     def bias_init(self, dim_tuple: tuple) -> np.ndarray:
-        return np.random.rand(dim_tuple)
+        return np.random.rand(*dim_tuple)
 
-    def forward(self, inputs: Tensor) -> np.ndarray:
+    def forward(self, inputs: np.ndarray) -> np.ndarray:
         raise NotImplementedError
 
-    def backward(self, grad: Tensor) -> np.ndarray:
+    def backward(self, grad: np.ndarray) -> np.ndarray:
         raise NotImplementedError
 
 
@@ -49,6 +56,9 @@ class Activation(Layer):
     def __init__(self, activation_func: ActivationFunc, ):
         super().__init__(activation_func.name)
         self.func = activation_func
+
+    def __repr__(self):
+        return "---> Activation Layer ({}) ".format(self.func.name)
 
     def forward(self, inputs: np.ndarray) -> np.ndarray:
         self.active = inputs
@@ -62,6 +72,7 @@ class Activation(Layer):
         return self.func.grad_func(self.active) * grad
 
 
+# ----------常见网络层-----------
 class Linear(ParamLayer):
     """线性层
     """
@@ -74,8 +85,12 @@ class Linear(ParamLayer):
         super().__init__(layer_name="linear")
         self.weights =  super().weights_init((input_dim, output_dim))  # (n,m)
         self.bias = super().bias_init((output_dim, ))  # (1,m)
-        self.weights_grad = Tensor(np.zeros_like(self.weights.data))  # (n,m)
-        self.bias_grad = Tensor(np.zeros_like(self.bias_grad.data))  # (1,m)
+        self.weights_grad = np.zeros_like(self.weights)  # (n,m)
+        self.bias_grad = np.zeros_like(self.bias)  # (1,m)
+        self.params_to_update = [StaticTensor(self.weights, self.weights_grad), StaticTensor(self.bias, self.bias_grad)]
+
+    def __repr__(self):
+        return "---> Linear Layer ({}) ".format(self.weights.shape)
 
     def forward(self, inputs: np.ndarray) -> np.ndarray:
         """
@@ -92,8 +107,9 @@ class Linear(ParamLayer):
         ---
         一个n维输入的m个仿射函数
         """
-        self.inputs = inputs  # (1,n)
+        self.inputs = inputs  # (batch_size, n)
         return inputs @ self.weights + self.bias
+
 
     def backward(self, grad: np.ndarray) -> np.ndarray:
         """
@@ -111,12 +127,16 @@ class Linear(ParamLayer):
          3) dE/dx_i = sum_j{(dE/dy_j)*(dy_j/dx_i)} = sum_j{grad_j * wij}
             --> dE/dx = (dE/dy)*(dy/dx) = grad @ w^T
         """
-        self.weights_grad = self.inputs.T @ grad
-        self.bias_grad = np.sum(grad, axis=0)
+        # clean
+        self.weights_grad.fill(0)
+        self.bias_grad.fill(0)
+        # update
+        self.weights_grad += self.inputs.T @ grad
+        self.bias_grad += np.sum(grad, axis=0)
         return grad @ self.weights.T
 
 
 if __name__ == '__main__':
-    pass
-
-
+    data = np.ones((10,3))
+    lin = Linear(3, 2)
+    print(lin.forward(data))

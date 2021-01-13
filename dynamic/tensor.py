@@ -4,9 +4,8 @@
 # @Author  : pcw
 # @File    : tensor.py
 # @Description: <>
-from typing import NoReturn, NamedTuple, Callable, List
-import numpy as np
-from core.utils import ArrayLike, array_like_format
+from typing import NoReturn
+from utils.wraps import ArrayLike, array_like_format
 
 _epsilon_ = 5e-5
 

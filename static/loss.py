@@ -5,6 +5,11 @@
 # @File    : loss.py
 # @Description: <>
 import numpy as np
+from typing import NamedTuple, Callable
+
+class Loss(NamedTuple):
+    batch_loss: Callable
+    loss_grad: Callable
 
 
 def mse(predict: np.ndarray, target: np.ndarray) -> np.ndarray:
@@ -15,6 +20,13 @@ def mse(predict: np.ndarray, target: np.ndarray) -> np.ndarray:
         target: (n_samples, 1)
     """
     return np.sum(np.power(predict - target, 2)) / predict.shape[0]
+
+def mse_grad(predict: np.ndarray, target: np.ndarray) -> np.ndarray:
+    """均方误差导数
+    """
+    return 2 * (predict - target)
+
+MSE = Loss(mse, mse_grad)
 
 
 def mae(predict: np.ndarray, target: np.ndarray) -> np.ndarray:
@@ -66,8 +78,6 @@ def categorical_cross_entropy(predict: np.ndarray, target: np.ndarray, samples_r
         target: (n_samples, k)
 
     Returns:
-
-    Notes:
 
     """
     # use ln() here, can also be np.log2()
