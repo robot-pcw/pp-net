@@ -58,7 +58,7 @@ class Activation(Layer):
         self.func = activation_func
 
     def __repr__(self):
-        return "---> Activation Layer ({}) ".format(self.func.name)
+        return "> Activation Layer ({}) <".format(self.func.name)
 
     def forward(self, inputs: np.ndarray) -> np.ndarray:
         self.active = inputs
@@ -90,7 +90,7 @@ class Linear(ParamLayer):
         self.params_to_update = [StaticTensor(self.weights, self.weights_grad), StaticTensor(self.bias, self.bias_grad)]
 
     def __repr__(self):
-        return "---> Linear Layer ({}) ".format(self.weights.shape)
+        return "> Linear Layer ({}) <".format(self.weights.shape)
 
     def forward(self, inputs: np.ndarray) -> np.ndarray:
         """

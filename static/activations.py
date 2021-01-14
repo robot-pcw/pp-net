@@ -44,8 +44,12 @@ def sigmoid_deriv(g: np.ndarray) -> np.ndarray:
 
 
 def softmax_func(x: np.ndarray) -> np.ndarray:
-    return np.exp(x) / np.sum(np.exp(x), axis=1)
+    # 防止数值溢出
+    z = x - np.max(x, axis=-1, keepdims=True)
+    return _softmax_func(z)
 
+def _softmax_func(x: np.ndarray) -> np.ndarray:
+    return np.exp(x) / np.sum(np.exp(x), axis=-1, keepdims=True)
 
 def softmax_deriv(g: np.ndarray) -> np.ndarray:
     pass
@@ -79,6 +83,7 @@ def lrelu_deriv(alpha):
 
 
 if __name__ == '__main__':
-    lr = lrelu(0.5)
-    a = np.array([1, 0, -1, 2, -2])
-    print("{}: {} -> {}".format(lr.name, a, lr.active_func(a)))
+    a = np.array([[1000, 500, 10, 1, 0.1], [100, 100, 10, 5, 1]])
+    b = softmax_func(a)
+    print(b)
+    #print(np.max(a, axis=-1, keepdims=True))

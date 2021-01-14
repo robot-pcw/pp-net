@@ -20,7 +20,7 @@ def shuffle(x: np.ndarray, y: np.ndarray) -> List[np.ndarray]:
     return np.hsplit(xy, [-y_dim])
 
 
-class Dataset:
+class DatasetBatchIter:
     """ 批样本生成器
     """
     def __init__(self, data_x: np.ndarray, data_y: np.ndarray, batch_size: int=16, copy: bool=True, is_limit: bool=True):
@@ -35,13 +35,13 @@ class Dataset:
         return self
 
     def __next__(self):
-        if self.start >= self.n:
+        self.start += self.batch_size
+        if self.start > self.n:
             if self.is_limit:
                 raise StopIteration
             else:
                 self._shuffle()
                 self.start = 0
-        self.start += self.batch_size
         return (self.x[self.start: self.start+self.batch_size][:], self.y[self.start: self.start+self.batch_size][:])
 
     def _shuffle(self):
@@ -51,6 +51,8 @@ class Dataset:
 if __name__ == '__main__':
     x = np.random.rand(10, 3)
     y = np.random.randint(2, size=(10, 1))
-    ds = Dataset(x, y, batch_size=3)
-    for i in ds:
-        print(i)
+    ds = DatasetBatchIter(x, y, batch_size=3, is_limit=False)
+    i = 0
+    while i<10:
+        print(next(ds))
+        i += 1

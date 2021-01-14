@@ -8,8 +8,9 @@ from typing import Callable, NoReturn, Optional, List
 from static.layers import Layer, ParamLayer
 from static.optimizers import Optimizer
 from static.loss import Loss
+from utils.dataset import DatasetBatchIter
 import numpy as np
-import time
+import math
 
 class Net:
     """Neural Network"""
@@ -29,33 +30,53 @@ class Net:
 
 
 class SequentialNet(Net):
-    """静态图"""
+    """序列式静态图"""
     def __init__(self):
         self.layers: List[Layer] = []
 
     def show(self):
-        print("---> Sequential Neural Network")
+        print("   Sequential Neural Network   ")
+        print("-------------------------------")
         for lay in self.layers:
             print(lay)
-        print("------------------------------")
+        print("-------------------------------")
 
     def add(self, layer: Layer):
         self.layers.append(layer)
 
-    def fit(self, train_data: np.ndarray, train_label: np.ndarray, epochs: int=5):
+    def fit(self, train_data: np.ndarray, train_label: np.ndarray, epochs: int=5, batch_size: int=16):
         print("input size: {}, target size:{}".format(train_data.shape, train_label.shape))
         if len(train_label.shape)==1:
             train_label = np.expand_dims(train_label, axis=1)
-        # todo: batch step
+        n_samples = train_data.shape[0]
+        batch_num = math.ceil(n_samples/batch_size)
+        batchIter = DatasetBatchIter(train_data, train_label, batch_size=batch_size, is_limit=False)
         for epoch in range(epochs):
-            # forward propagation
-            train_pred = self._forward_prop(train_data)
+            i, epoch_total_loss, epoch_mean_metric = 0, 0, 0
+            print("\nepoch{} {}".format(epoch+1, "-" * 50))
+            while i < batch_num:
+                batch_data, batch_label = next(batchIter)
+                # mini batch forward propagation
+                pred = self._forward_prop(batch_data)
+                
+                # mini batch backward propagation
+                batch_mean_loss = self.loss_func.batch_loss(pred, batch_label)
+                loss_grad = self.loss_func.loss_grad(pred, batch_label)
+                self._backward_prop(loss_grad)
 
-            # backward propagation
-            batch_mean_loss = self.loss_func.batch_loss(train_pred, train_label)
-            loss_grad = self.loss_func.loss_grad(train_pred, train_label)
-            self._backward_prop(loss_grad)
-            print("epoch:{}, train_loss:{} ".format(epoch, batch_mean_loss))
+                # record
+                epoch_total_loss += batch_mean_loss
+                i += 1
+                metric_info = ""
+                if self.metrics:
+                    batch_metric = self.metrics(batch_label, pred)
+                    metric_info = ", metric: {}".format(batch_metric)
+                    epoch_mean_metric += batch_metric
+                #self.show_model_param()
+                print("  batch{}  batch_average_loss: {}{}".format(i, batch_mean_loss, metric_info))
+            print("epoch_average_loss: {}".format(epoch_total_loss / batch_num))
+            if self.metrics:
+                print("epoch_average_metric: {}".format(epoch_mean_metric / batch_num))
 
 
     def _forward_prop(self, x: np.ndarray) -> np.ndarray:
@@ -80,30 +101,10 @@ class SequentialNet(Net):
     def predict(self, test_data: np.ndarray) -> np.ndarray:
         return self._forward_prop(test_data)
 
-
-if __name__ == '__main__':
-    from static.layers import Linear,Activation
-    from sklearn.datasets import load_boston
-    from sklearn.model_selection import train_test_split
-    from static.activations import tanh, sigmoid
-    from static.optimizers import SGD
-    from static.loss import MSE
-    from sklearn.preprocessing import normalize
-
-    # load data
-    boston = load_boston()
-    x_train, x_test, y_train, y_test = train_test_split(boston.data, boston.target, test_size=0.2, random_state=0)
-    x_train = normalize(x_train, axis=0)
-    y_train = normalize(np.expand_dims(y_train, axis=1), axis=0)
-
-    # build model
-    model = SequentialNet()
-    model.add(Linear(input_dim=13, output_dim=4))
-    model.add(Activation(tanh()))
-    model.add(Linear(input_dim=4, output_dim=1))
-    model.add(Activation(sigmoid()))
-    model.compile(optimizer=SGD(lr=0.001), loss=MSE )
-    model.show()
-
-    # train and eval
-    model.fit(train_data=x_train, train_label=y_train, epochs=20)
+    def show_model_param(self):
+        print("Model Params: ")
+        cnt = 1
+        for lay in self.layers:
+            p = lay.params_to_update if isinstance(lay, ParamLayer) else "Non Params"
+            print("Layer{}-{}: {}".format(cnt, lay.layer_name, p))
+            cnt += 1

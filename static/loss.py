@@ -6,6 +6,7 @@
 # @Description: <>
 import numpy as np
 from typing import NamedTuple, Callable
+from static.activations import softmax_func
 
 class Loss(NamedTuple):
     batch_loss: Callable
@@ -84,6 +85,34 @@ def categorical_cross_entropy(predict: np.ndarray, target: np.ndarray, samples_r
     predict = np.clip(predict, _epsilon_, 1 - _epsilon_)
     ce = np.sum(- target * np.log(predict), axis=-1)
     return  np.mean(ce, axis=0) if samples_reduce else ce
+
+
+def softmax_cross_entropy(predict: np.ndarray, target: np.ndarray, samples_reduce: bool=True) -> np.ndarray:
+    """softmax+交叉熵 损失结合
+    Args:
+        predict: (n_samples, k)
+        target: (n_samples, k)
+    """
+    predict_softmax = softmax_func(predict)
+    # predict = np.clip(predict, _epsilon_, 1 - _epsilon_)
+    ce = np.sum(- target * np.log(predict_softmax), axis=-1)
+    return np.mean(ce, axis=0) if samples_reduce else ce
+
+
+def softmax_cross_entropy_grad(predict: np.ndarray, target: np.ndarray) -> np.ndarray:
+    """softmax+交叉熵 损失结合
+    Args:
+        predict: (n_samples, k)
+        target: (n_samples, k)
+    Returns:
+        out: (n_samples, k)
+    References:
+        https://zhuanlan.zhihu.com/p/60042105
+    """
+    return softmax_func(predict) - target
+
+
+SCE = Loss(softmax_cross_entropy, softmax_cross_entropy_grad)
 
 
 if __name__ == '__main__':
