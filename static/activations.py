@@ -82,8 +82,16 @@ def lrelu_deriv(alpha):
     return inner_func
 
 
+def logsumexp(x, axis, keepdims=False):
+    xmax = np.max(x)
+    return (x-xmax) - np.log(np.sum(np.exp(x - xmax), axis=axis, keepdims=keepdims))
+
+def another_softmax():
+    return np.exp(logsumexp(a, axis=1, keepdims=True))
+
 if __name__ == '__main__':
     a = np.array([[1000, 500, 10, 1, 0.1], [100, 100, 10, 5, 1]])
-    b = softmax_func(a)
-    print(b)
+    #a = np.array([[3, 5, 1, 1, 2], [6, 1, 2, 5, 3]])
+    sa1 = softmax_func(a)
+    print(f"softmax: {sa1}")
     #print(np.max(a, axis=-1, keepdims=True))

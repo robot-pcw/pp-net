@@ -27,8 +27,6 @@ def mse_grad(predict: np.ndarray, target: np.ndarray) -> np.ndarray:
     """
     return 2 * (predict - target)
 
-MSE = Loss(mse, mse_grad)
-
 
 def mae(predict: np.ndarray, target: np.ndarray) -> np.ndarray:
     """平均绝对误差
@@ -109,9 +107,13 @@ def softmax_cross_entropy_grad(predict: np.ndarray, target: np.ndarray) -> np.nd
     References:
         https://zhuanlan.zhihu.com/p/60042105
     """
-    return softmax_func(predict) - target
+    #return softmax_func(predict) - target
+    #revise = np.ones_like(predict) - np.eye(predict.shape[0], predict.shape[1])[predict.argmax(axis=1)]
+    return (softmax_func(predict) - target)
 
 
+#global singletons
+MSE = Loss(mse, mse_grad)
 SCE = Loss(softmax_cross_entropy, softmax_cross_entropy_grad)
 
 

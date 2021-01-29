@@ -108,3 +108,28 @@ class SequentialNet(Net):
             p = lay.params_to_update if isinstance(lay, ParamLayer) else "Non Params"
             print("Layer{}-{}: {}".format(cnt, lay.layer_name, p))
             cnt += 1
+
+if __name__ == '__main__':
+    from sklearn.datasets import load_iris
+    from utils.ops import one_hot
+    from utils.dataset import shuffle
+    from static.layers import Linear
+    from static.optimizers import SGD
+    from static.loss import SCE
+    from utils.metrics import acc
+
+    iris = load_iris()
+    # label one-hot encode
+    x, y = shuffle(iris.data, one_hot(iris.target, 3))
+    print("iris data size: ", x.shape, y.shape)
+    print("iris samples:\n  x1: {}, \n  y1: {}".format(x[:3], y[:3]))
+
+    # build classifier model
+    clf = SequentialNet()
+    clf.add(Linear(input_dim=4, output_dim=3))
+    clf.add(Linear(input_dim=3, output_dim=3))
+    clf.compile(optimizer=SGD(lr=0.001), loss=SCE, metrics=acc)
+    clf.show()
+
+    # train and eval
+    clf.fit(train_data=x, train_label=y, batch_size=16, epochs=30)
